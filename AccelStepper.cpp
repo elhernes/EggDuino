@@ -32,6 +32,15 @@ void AccelStepper::moveTo(long absolute)
 
 void AccelStepper::move(long relative)
 {
+#if 0
+   Serial.print("(move ");
+   Serial.print(_currentPos);
+   Serial.print(" + ");
+   Serial.print(relative);
+   Serial.print(" = ");
+   Serial.print(_currentPos + relative);
+   Serial.println(")");
+#endif
     moveTo(_currentPos + relative);
 }
 
@@ -360,6 +369,14 @@ void AccelStepper::setOutputPins(uint8_t mask)
 // 0 pin step function (ie for functional usage)
 void AccelStepper::step0(long step)
 {
+#if 0
+   Serial.print("(step0 ");
+   Serial.print(step);
+   Serial.print(" @");
+   Serial.print(_speed);
+   Serial.println(")");
+#endif
+
   if (_speed > 0)
     _forward();
   else

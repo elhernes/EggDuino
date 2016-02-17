@@ -20,24 +20,19 @@
  */
 
 #include "AccelStepper.h" // nice lib from http://www.airspayce.com/mikem/arduino/AccelStepper/
+#include "AFMotor.h"
+#define MOTOR_SHIELD
+
 #include <Servo.h>
 #include "SerialCommand.h" //nice lib from Stefan Rado, https://github.com/kroimon/Arduino-SerialCommand
 #include <avr/eeprom.h>
 #include "button.h"
 
-#define initSting "EBBv13_and_above Protocol emulated by Eggduino-Firmware V1.6a"
-//Rotational Stepper:
-#define step1 11
-#define dir1 10
-#define enableRotMotor 9
-#define rotMicrostep 16  //MicrostepMode, only 1,2,4,8,16 allowed, because of Integer-Math in this Sketch
-//Pen Stepper:
-#define step2 8
-#define dir2 7
-#define enablePenMotor 6
-#define penMicrostep 16 //MicrostepMode, only 1,2,4,8,16 allowed, because of Integer-Math in this Sketch
+#include "functions.h"
 
-#define servoPin 3 //Servo
+#define initSting "EBBv13_and_above Protocol emulated by Eggduino-Firmware V1.6a"
+
+#define servoPin 10 //Servo
 
 // EXTRAFEATURES - UNCOMMENT TO USE THEM -------------------------------------------------------------------
 
@@ -50,9 +45,56 @@
 #define penUpPosEEAddress ((uint16_t *)0)
 #define penDownPosEEAddress ((uint16_t *)2)
 
+#ifdef MOTOR_SHIELD
+// two stepper motors one on each port
+AF_Stepper motor1(200, 1);
+AF_Stepper motor2(200, 2);
+
+// you can change these to DOUBLE or INTERLEAVE or MICROSTEP
+// wrappers for the first motor
+#define MM_STEP MICROSTEP
+
+void forwardstep1() {  
+//  Serial.println(__func__);
+  motor1.onestep(FORWARD, MM_STEP);
+}
+void backwardstep1() {  
+  motor1.onestep(BACKWARD, MM_STEP);
+}
+// wrappers for the second motor
+void forwardstep2() {  
+  motor2.onestep(FORWARD, MM_STEP);
+}
+void backwardstep2() {  
+  motor2.onestep(BACKWARD, MM_STEP);
+}
+
+// Motor shield has two motor ports, now we'll wrap them in an AccelStepper object
+AccelStepper rotMotor(forwardstep1, backwardstep1);
+AccelStepper penMotor(forwardstep2, backwardstep2);
+
+#define rotMicrostep 16  //MicrostepMode, only 1,2,4,8,16 allowed, because of Integer-Math in this Sketch
+#define penMicrostep 16 //MicrostepMode, only 1,2,4,8,16 allowed, because of Integer-Math in this Sketch
+
+
+#else // ! MOTOR_SHIELD
+//Rotational Stepper:
+#define step1 11
+#define dir1 10
+#define enableRotMotor 9
+//Pen Stepper:
+#define step2 8
+#define dir2 7
+#define enablePenMotor 6
 //make Objects
+
 AccelStepper rotMotor(1, step1, dir1);
 AccelStepper penMotor(1, step2, dir2);
+
+#define rotMicrostep 16  //MicrostepMode, only 1,2,4,8,16 allowed, because of Integer-Math in this Sketch
+#define penMicrostep 16 //MicrostepMode, only 1,2,4,8,16 allowed, because of Integer-Math in this Sketch
+#endif
+
 Servo penServo;
 SerialCommand SCmd;
 //create Buttons

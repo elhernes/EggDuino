@@ -1,6 +1,12 @@
 Eggduino
 ====
 
+ELH Modifications to support Motor Shield - http://www.amazon.com/SainSmart-L293D-Shield-Arduino-Duemilanove/dp/B00813HBBO
+
+  1. Added AFMotor sources
+  2. Changed pinouts to match servo and stepper controllers on the shield
+  3. AFMotor needs a signed speed value or else the direction never reverses
+
 Arduino Firmware for Eggbot / Spherebot with Inkscape-Integration
 
 Version 1.6a

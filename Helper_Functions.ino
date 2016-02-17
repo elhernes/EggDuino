@@ -1,11 +1,12 @@
 void initHardware(){
 	// enable eeprom wait in avr/eeprom.h functions
-	SPMCSR &= ~SELFPRGEN;
+//	SPMCSR &= ~SELFPRGEN;
+	SPMCSR &= ~SPMEN;
 
 	loadPenPosFromEE();
 
-	pinMode(enableRotMotor, OUTPUT);
-	pinMode(enablePenMotor, OUTPUT);
+//	pinMode(enableRotMotor, OUTPUT);
+//	pinMode(enablePenMotor, OUTPUT);
 
 	rotMotor.setMaxSpeed(2000.0);
 	rotMotor.setAcceleration(10000.0);
@@ -39,15 +40,23 @@ void inline sendError(){
 }
 
 void motorsOff() {
-	digitalWrite(enableRotMotor, HIGH);
-	digitalWrite(enablePenMotor, HIGH);
-	motorsEnabled = 0;
+#ifdef MOTOR_SHIELD
+  motor1.release();
+  motor2.release();
+#else
+  digitalWrite(enableRotMotor, HIGH);
+  digitalWrite(enablePenMotor, HIGH);
+#endif			     
+  motorsEnabled = 0;
 }
 
 void motorsOn() {
-	digitalWrite(enableRotMotor, LOW) ;
-	digitalWrite(enablePenMotor, LOW) ;
-	motorsEnabled = 1;
+#ifdef MOTOR_SHIELD
+#else
+  digitalWrite(enableRotMotor, LOW) ;
+  digitalWrite(enablePenMotor, LOW) ;
+#endif
+  motorsEnabled = 1;
 }
 
 void toggleMotors() {
@@ -73,7 +82,6 @@ bool parseSMArgs(uint16_t *duration, int *penStepsEBB, int *rotStepsEBB) {
 	}
 	if (arg3 != NULL) {
 		*rotStepsEBB = atoi(arg3);
-
 		return true;
 	}
 
@@ -87,9 +95,23 @@ void prepareMove(uint16_t duration, int penStepsEBB, int rotStepsEBB) {
 	if( (1 == rotStepCorrection) && (1 == penStepCorrection) ){ // if coordinatessystems are identical
 		//set Coordinates and Speed
 		rotMotor.move(rotStepsEBB);
-		rotMotor.setSpeed( abs( (float)rotStepsEBB * (float)1000 / (float)duration ) );
+		float rotSpeed = (float)rotStepsEBB * (float)1000 / (float)duration;
+		rotMotor.setSpeed(rotSpeed);
 		penMotor.move(penStepsEBB);
-		penMotor.setSpeed( abs( (float)penStepsEBB * (float)1000 / (float)duration ) );
+		float penSpeed = (float)penStepsEBB * (float)1000 / (float)duration;
+		penMotor.setSpeed(penSpeed);
+#if 0
+		Serial.print("(pen ");
+		Serial.print(penStepsEBB);
+		Serial.print(" @ ");
+		Serial.print(penSpeed);
+		Serial.print(") (egg ");
+		Serial.print(rotStepsEBB);
+		Serial.print(" @ ");
+		Serial.print(rotSpeed);
+		Serial.println(")");
+#endif
+
 	} else {
 		//incoming EBB-Steps will be multiplied by 16, then Integer-maths is done, result will be divided by 16
 		// This make thinks here really complicated, but floating point-math kills performance and memory, believe me... I tried...
@@ -105,14 +127,28 @@ void prepareMove(uint16_t duration, int penStepsEBB, int rotStepsEBB) {
 		long temp_rotSpeed =  ((long)rotStepsToGo * (long)1000 / (long)duration );	// calc Speed in Integer Math
 		long temp_penSpeed =  ((long)penStepsToGo * (long)1000 / (long)duration ) ;
 
-		float rotSpeed= (float) abs(temp_rotSpeed);	// type cast
-		float penSpeed= (float) abs(temp_penSpeed);
-
+		float rotSpeed= (float) (temp_rotSpeed);	// type cast
+		float penSpeed= (float) (temp_penSpeed);
+#if 0
+		Serial.print("(pen ");
+		Serial.print(penStepsEBB);
+		Serial.print(" => ");
+		Serial.print(penStepsToGo);
+		Serial.print(" @ ");
+		Serial.print(penSpeed);
+		Serial.print(") (egg ");
+		Serial.print(rotStepsEBB);
+		Serial.print(" => ");
+		Serial.print(rotStepsToGo);
+		Serial.print(" @ ");
+		Serial.print(rotSpeed);
+		Serial.println(")");
+#endif
 		//set Coordinates and Speed
 		rotMotor.move(rotStepsToGo);		// finally, let us set the target position...
 		rotMotor.setSpeed(rotSpeed);		// and the Speed!
 		penMotor.move(penStepsToGo);
-		penMotor.setSpeed( penSpeed );
+		penMotor.setSpeed(penSpeed);
 	}
 }
 
